@@ -21,11 +21,11 @@ class ViewController: UIViewController, WKNavigationDelegate {
         webView.navigationDelegate = self
         view = webView
         
-        let url = URL(string: websites[0])!
+        let url = URL(string: "https://" + websites[0])!
         webView.load(URLRequest(url: url))
+        
         webView.allowsBackForwardNavigationGestures = true
         webView.addObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress), options: .new, context: nil)
-        
     }
 
     override func viewDidLoad() {
@@ -35,9 +35,13 @@ class ViewController: UIViewController, WKNavigationDelegate {
         progressView.sizeToFit()
         let progressButton = UIBarButtonItem(customView: progressView)
         
-        let spacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        let flexibleSpacer = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        let fixedSpacer = UIBarButtonItem(barButtonSystemItem: .fixedSpace, target: nil, action: nil)
+        
         let refresh = UIBarButtonItem(barButtonSystemItem: .refresh, target: webView, action: #selector(webView.reload))
-        toolbarItems = [progressButton, spacer, refresh]
+        let back = UIBarButtonItem(barButtonSystemItem: .rewind, target: webView, action: #selector(webView.goBack))
+        let forward = UIBarButtonItem(barButtonSystemItem: .fastForward, target: webView, action: #selector(webView.goForward))
+        toolbarItems = [progressButton, flexibleSpacer, back, fixedSpacer, refresh, fixedSpacer, forward]
         
         navigationController?.isToolbarHidden = false
         
@@ -73,15 +77,18 @@ class ViewController: UIViewController, WKNavigationDelegate {
     
     func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, preferences: WKWebpagePreferences, decisionHandler: @escaping (WKNavigationActionPolicy, WKWebpagePreferences) -> Void) {
         
-        let url = navigationAction.request.url
+        guard let url = navigationAction.request.url else { return }
         
-        if let host = url?.host {
+        if let host = url.host {
             for website in websites {
                 if host.contains(website) {
                     decisionHandler(.allow, preferences)
                     return
                 }
             }
+            
+            let ac = UIAlertController(title: "You're not allowed to leave current domain", message: nil, preferredStyle: .alert)
+            present(ac, animated: true)
         }
         
         decisionHandler(.cancel, preferences)
